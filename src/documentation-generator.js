@@ -35,17 +35,17 @@ function parseFriendlyUrlFragment(value) {
  *   export interface MyState extends Subject {}
  * ```
  */
-function removeNodeModulesMembers(project) {
-  project.children.forEach((child) => {
-    if (child.children) {
-      child.children = child.children.filter((c) => {
-        return (!/node_modules/.test(c.sources[0].fileName));
-      });
-    }
-  });
-}
+// function removeNodeModulesMembers(project) {
+//   project.children.forEach((child) => {
+//     if (child.children) {
+//       child.children = child.children.filter((c) => {
+//         return (!/node_modules/.test(c.sources[0].fileName));
+//       });
+//     }
+//   });
+// }
 
-function generateDocumentationFiles() {
+async function generateDocumentationFiles() {
   logger.info('Generating documentation...');
 
   const app = new TypeDoc.Application();
@@ -54,6 +54,7 @@ function generateDocumentationFiles() {
   app.options.addReader(new TypeDoc.TSConfigReader());
 
   app.bootstrap({
+    entryPoints: 'src/app/public',
     exclude: [
       '**/node_modules/**',
       '**/fixtures/**',
@@ -61,29 +62,20 @@ function generateDocumentationFiles() {
       '**/plugin-resources/**'
     ],
     excludeExternals: true,
-    excludeNotExported: true,
     excludePrivate: true,
     excludeProtected: true,
-    experimentalDecorators: true,
-    logger: 'none',
-    mode: 'file',
-    module: 'CommonJS',
-    stripInternal: true,
-    target: 'ES5'
+    logLevel: 'Verbose'
   });
 
-  const project = app.convert(
-    app.expandInputFiles([
-      'src/app/public'
-    ])
-  );
+  const project = app.convert();
 
   if (project) {
     removeDocumentationFiles();
-    removeNodeModulesMembers(project);
+    // removeNodeModulesMembers(project);
 
     const jsonPath = `${outputDir}/documentation.json`;
-    app.generateJson(project, jsonPath);
+    fs.createFileSync(jsonPath);
+    await app.generateJson(project, jsonPath);
     const jsonContents = fs.readJsonSync(jsonPath);
 
     // Create anchor IDs to be used for same-page linking.
